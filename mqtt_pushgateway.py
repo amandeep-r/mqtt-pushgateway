@@ -8,6 +8,7 @@ import logging
 import socket
 import time
 import json
+import ssl
 
 import paho.mqtt.client as mqtt
 
@@ -153,10 +154,19 @@ def on_message(client, userdata, message):
         logging.warning("Metric update for '%s' failed" % topic, exc_info=True)
 
 def main():
+    # If you put a %(hostname) in the config file under client_id, the hostname will be included
     client = mqtt.Client(config["mqtt"]["client_id"] % dict(
         hostname=socket.gethostname()
     ))
-    client.username_pw_set(config["mqtt"]["username"], config["mqtt"]["password"])
+    client.tls_set(
+        ca_certs = config["mqtt"]["rootCA_path"],
+        certfile = config["mqtt"]["cert_path"],
+        keyfile = config["mqtt"]["private_key_path"],
+        cert_reqs = ssl.CERT_REQUIRED,
+        # defaults to the highest version available
+        # tls_version = ssl.PROTOCOL_SSLv23,
+    )
+    # client.username_pw_set(config["mqtt"]["username"], config["mqtt"]["password"])
     client.on_message = on_message
 
     def on_connect(client, userdata, flags, result):
