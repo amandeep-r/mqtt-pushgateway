@@ -1,0 +1,10 @@
+version: "3"
+services:
+  mqtt-pushgateway:
+    build:
+      context: .
+    ports:
+      - "9466:9466"
+    volumes:
+      - ./config:/config
+    tty: true

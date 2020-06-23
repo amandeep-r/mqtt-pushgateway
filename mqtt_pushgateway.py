@@ -125,9 +125,17 @@ def http_metrics():
     ]
     return Response('\n'.join(content + ['']), mimetype="text/plain")
 
+def babylon_farmstatus_hack(message):
+    json_farmstatus = json.loads(message.payload.decode("utf-8"))
+    topic = message.topic
+    revised_topic = topic + "/" +str(json_farmstatus['serial_num'])
+    return revised_topic    
 
 def on_message(client, userdata, message):
     topic = message.topic
+    if topic == "babylon/farm_out":
+        topic = babylon_farmstatus_hack(message)
+
     try:
         payload = message.payload.decode("utf-8")
     except:
@@ -158,13 +166,15 @@ def main():
     client = mqtt.Client(config["mqtt"]["client_id"] % dict(
         hostname=socket.gethostname()
     ))
+    # Configure network encryption and authentication options. Enables SSL/TLS support.
+    # We need this for AWS IOT
     client.tls_set(
         ca_certs = config["mqtt"]["rootCA_path"],
         certfile = config["mqtt"]["cert_path"],
         keyfile = config["mqtt"]["private_key_path"],
         cert_reqs = ssl.CERT_REQUIRED,
         # defaults to the highest version available
-        # tls_version = ssl.PROTOCOL_SSLv23,
+        tls_version = ssl.PROTOCOL_SSLv23,
     )
     # client.username_pw_set(config["mqtt"]["username"], config["mqtt"]["password"])
     client.on_message = on_message
@@ -180,9 +190,10 @@ def main():
     client.connect(config["mqtt"]["broker"], port=config["mqtt"]["port"])
 
     client.loop_start()
+    client.enable_logger()
 
 
-    app.debug = False
+    app.debug = True
 
     try:
         app.run(host=config["exporter"]["listen"], port=config["exporter"]["port"])
