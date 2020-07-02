@@ -1,0 +1,68 @@
+[exporter]
+listen = "0.0.0.0"
+port   = 9466
+
+# Configure your MQTT broker's address and credentials here.
+[mqtt]
+client_id = "mqtt_pushgw-%(hostname)s"
+broker    = "a37viqgs4xlb64-ats.iot.us-east-1.amazonaws.com"
+port      = 8883
+username  = "user"
+password  = "pass"
+rootCA_path = "/home/aman/Code/Babylon/mqtt-pushgateway/config/AmazonRootCA1.pem"
+cert_path = "/home/aman/Code/Babylon/mqtt-pushgateway/config/310b2561f3-certificate.pem.crt"
+private_key_path = "/home/aman/Code/Babylon/mqtt-pushgateway/config/310b2561f3-private.pem.key"
+
+# List some keys we should subscribe to. Use '#' to subscribe to *everything*.
+# We will ignore any messages that can't be directly parsed as floats.
+subscribe = [
+    "babylon/farm_out",
+]
+
+# Expire metrics after 5 Minutes. Can be overridden in the [[topic]] sections.
+# Comment to disable.
+expire = 300
+
+
+[[topic]]
+# You can configure a regular expression to match the topic name against.
+# The first [[topic]] stanza that matches, decides what happens, so put
+# stanzas with more specialized regexen first. I'm doing this wrong here,
+# but I want to explain the most basic [[topic]] stanzas first.
+#
+# Match groups will be converted to Prometheus keywords.
+#
+# The special group '__metric__', if present, will denote the metric name and
+# NOT be added as a keyword.
+#
+# If match is not given, or the regex does not return a __metric__ group,
+# the topic name will be split at / and the last part will be used for
+# the metric name.
+#
+match  = 'sensor/(?P<sensor_name>\w+)/(?P<__metric__>\w+)'
+#
+# This regex will convert a topic such as this:
+#
+#    sensor/garage/temperature
+#
+# into a Prometheus metric such as this one:
+#
+#    temperature{mqtt_topic="sensor/garage/temperature",sensor_name="garage"}
+#
+# so then you can use the sensor_name as a filter in your PromQL queries.
+
+[[topic]]
+match  = 'sensor/slow_sensor/super_slow_metric'
+
+# You may override expire for topics that are updated more/less frequently
+expire = 900
+
+# You can specify a hardcoded metric name to avoid all surprises
+metric = "just_a_metric"
+
+
+[[topic]]
+match  = 'sensor/sucky_sensor/.*'
+# If you want to ignore certain topics that are unfortunately included
+# in your subscriptions, you can use:
+ignore = true           
